@@ -54,6 +54,7 @@ class SManagerController extends Controller
 
         $request->session()->forget('order_id');
         $request->session()->forget('payment_data');
+        $request->session()->forget('sM_transaction_id');
         flash(translate('Payment Completed'))->success();
         return view('frontend.order_confirmed', compact('order'));
     }
@@ -62,6 +63,7 @@ class SManagerController extends Controller
     {
         $request->session()->forget('order_id');
         $request->session()->forget('payment_data');
+        $request->session()->forget('sM_transaction_id');
         flash(translate('Payment Failed'))->error();
         return redirect(url('/purchase_history'));
     }
@@ -70,6 +72,7 @@ class SManagerController extends Controller
     {
         $request->session()->forget('order_id');
         $request->session()->forget('payment_data');
+        $request->session()->forget('sM_transaction_id');
         flash(translate('Payment cancelled'))->success();
         return redirect(url('/purchase_history'));
     }
