@@ -38,17 +38,17 @@ class sManagerService
             $responseJSON = json_decode($result, true);
             $code    = $responseJSON['code'];
             $message = $responseJSON['message'];
+            //return $responseJSON;
 
             if ($code !== 200) {
-                return Redirect::back()
-                    ->withErrors([$message]);
+                flash($message)->error();
+                return redirect(url(env('APP_URL').'/purchase_history'));
             }
-            //return $this->paymentDetails($responseJSON);
             return redirect(url($responseJSON['data']['link']));
 
         } catch (\Exception $ex) {
-            return Redirect::back()
-                ->withErrors([$ex->getMessage()]);
+            flash([$ex->getMessage()])->error();
+            return redirect(url(env('APP_URL').'/purchase_history'));
         }
     }
 
@@ -70,7 +70,6 @@ class sManagerService
             curl_setopt($url, CURLOPT_HTTPHEADER, $header);
             curl_setopt($url, CURLOPT_CUSTOMREQUEST, "GET");
             curl_setopt($url, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($url, CURLOPT_POSTFIELDS, $url);
             curl_setopt($url, CURLOPT_FOLLOWLOCATION, 1);
             $result = curl_exec($url);
             curl_close($url);
@@ -79,13 +78,14 @@ class sManagerService
             $message = $responseJSON['message'];
 
             if ($code !== 200) {
-                return Redirect::back()
-                    ->withErrors([$message]);
+                flash($message)->error();
+                return redirect(url(env('APP_URL').'/purchase_history'));
             }
 
             return $responseJSON;
 
         } catch (\Exception $ex) {
+            flash(translate([$ex->getMessage()]))->error();
             return Redirect::back()
                 ->withErrors([$ex->getMessage()]);
         }

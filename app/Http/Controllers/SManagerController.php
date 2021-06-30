@@ -1,5 +1,6 @@
 <?php
 namespace App\Http\Controllers;
+use App\Order;
 use App\Services\sManagerService;
 use Http;
 use Illuminate\Http\RedirectResponse;
@@ -13,73 +14,64 @@ class SManagerController extends Controller
 
     public function index(Request $request)
     {
+        $order = Order::findOrFail($request->session()->get('order_id'));
+        $post_data = array();
+        $post_data['total_amount'] = $order->grand_total; # You cant not pay less than 10
+        $post_data['currency'] = "BDT";
+        $post_data['transaction_id'] = uniqid('sM_', true); // tran_id must be unique
+        $orderId = "orderId_".$order->id;
+
         $info = [
-            'amount'          => "50",
-            'transaction_id'  => 'trnx_' .uniqid('', true), // must be unique
+            'amount'          => $post_data['total_amount'],
+            'transaction_id'  => $post_data['transaction_id'],
             'success_url'     => route('smanager.success'),  // success url
             'fail_url'        => route('smanager.fail'),  // failed url
-            'customer_name'   => "Hasan",
-            'customer_mobile' => "01625568604",
-            'purpose'         => 'Online Payment',
-            'payment_details' => 'Payment for buying 3 items'
+            'customer_name'   => auth()->user()->name,
+            'customer_mobile' =>  auth()->user()->phone,
+            'purpose'         => @$order->orderDetails->first()->product->name,
+            'payment_details' => $orderId,
         ];
+        session()->put('sM_transaction_id', $post_data['transaction_id']);
 
-      return sManagerService::initiatePayment($info);
+        return sManagerService::initiatePayment($info);
     }
-
-   public function paymentDetails($tran_id): RedirectResponse
-   {
-        $url = curl_init('https://api.sheba.xyz/v1/ecom-payment/details?transaction_id='.$tran_id);
-
-        try{
-            $header = array(
-                'client-id:'.env('SMANAGER_CLIENT_ID'),
-                'client-secret:'.env('SMANAGER_CLIENT_SECRET'),
-                'Accept: application/json'
-            );
-            curl_setopt($url, CURLOPT_HTTPHEADER, $header);
-            curl_setopt($url, CURLOPT_CUSTOMREQUEST, "GET");
-            curl_setopt($url, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($url, CURLOPT_POSTFIELDS, $url);
-            curl_setopt($url, CURLOPT_FOLLOWLOCATION, 1);
-            $result = curl_exec($url);
-            curl_close($url);
-            $responseJSON = json_decode($result, true);
-            $code    = $responseJSON['code'];
-            $message = $responseJSON['message'];
-
-            if ($code !== 200) {
-                return Redirect::back()
-                    ->withErrors([$message]);
-            }
-
-            return $responseJSON;
-
-        } catch (\Exception $ex) {
-            return Redirect::back()
-                ->withErrors([$ex->getMessage()]);
-        }
-    }
-
-
 
     public function success(Request $request)
     {
-       
+        $transactionId = session()->get('sM_transaction_id');
+        $responseJSON = sManagerService::paymentDetails($transactionId);
+        if($responseJSON['data']['payment_status'] !== 'completed')
+        {
+            flash('Payment is Not Valid')->error();
+            return redirect(url(env('APP_URL').'/purchase_history'));
+        }
+
+        $order = Order::findOrFail($request->session()->get('order_id'));
+        if($order->payment_status =='Pending')
+        {
+            $order->update(['payment_status'=>'Paid']);
+        }
+
+        $request->session()->forget('order_id');
+        $request->session()->forget('payment_data');
+        flash(translate('Payment Completed'))->success();
+        return view('frontend.order_confirmed', compact('order'));
     }
 
     public function fail(Request $request)
     {
-       
-        flash('Payment Failed')->success();
+        $request->session()->forget('order_id');
+        $request->session()->forget('payment_data');
+        flash(translate('Payment Failed'))->error();
         return redirect(url('/purchase_history'));
     }
 
-     public function cancel(Request $request)
+    public function cancel(Request $request)
     {
-       
-        flash('Payment cancelled')->success();
-    	return redirect(url('/purchase_history'));
+        $request->session()->forget('order_id');
+        $request->session()->forget('payment_data');
+        flash(translate('Payment cancelled'))->success();
+        return redirect(url('/purchase_history'));
     }
 
 
