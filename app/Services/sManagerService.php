@@ -57,7 +57,7 @@ class sManagerService
      * @param string $tran_id
      * @return Application|RedirectResponse|Redirector
      */
-    public static function paymentDetails(string $tran_id): RedirectResponse
+    public static function paymentDetails(string $tran_id)
     {
         $url = curl_init('https://api.sheba.xyz/v1/ecom-payment/details?transaction_id='.$tran_id);
 
