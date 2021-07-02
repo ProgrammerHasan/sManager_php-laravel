@@ -43,11 +43,11 @@ class SManagerController extends Controller
         if($responseJSON['data']['payment_status'] !== 'completed')
         {
             flash('Payment is Not Valid')->error();
-            return redirect(url(env('APP_URL').'/purchase_history'));
+            return redirect(url('Your redirect url'));
         }
 
-        $order = Order::findOrFail($request->session()->get('order_id'));
-        if($order->payment_status =='Pending')
+        $order = Order::findOrFail(session()->get('order_id'));
+        if($order->payment_status =='unpaid')
         {
             $order->update(['payment_status'=>'Paid']);
         }
@@ -65,7 +65,7 @@ class SManagerController extends Controller
         $request->session()->forget('payment_data');
         $request->session()->forget('sM_transaction_id');
         flash(translate('Payment Failed'))->error();
-        return redirect(url('/purchase_history'));
+        return redirect(url('Your redirect url'));
     }
 
     public function cancel(Request $request)
@@ -74,7 +74,7 @@ class SManagerController extends Controller
         $request->session()->forget('payment_data');
         $request->session()->forget('sM_transaction_id');
         flash(translate('Payment cancelled'))->success();
-        return redirect(url('/purchase_history'));
+        return redirect(url('Your redirect url'));
     }
 
 

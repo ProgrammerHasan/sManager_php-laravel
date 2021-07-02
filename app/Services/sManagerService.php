@@ -42,13 +42,13 @@ class sManagerService
 
             if ($code !== 200) {
                 flash($message)->error();
-                return redirect(url(env('APP_URL').'/purchase_history'));
+                return redirect(url('Your redirect url, When getting error'));
             }
             return redirect(url($responseJSON['data']['link']));
 
         } catch (\Exception $ex) {
             flash([$ex->getMessage()])->error();
-            return redirect(url(env('APP_URL').'/purchase_history'));
+            return redirect(url('Your redirect url, When getting error'));
         }
     }
 
@@ -79,7 +79,7 @@ class sManagerService
 
             if ($code !== 200) {
                 flash($message)->error();
-                return redirect(url(env('APP_URL').'/purchase_history'));
+                return redirect(url('Your redirect url'));
             }
 
             return $responseJSON;
